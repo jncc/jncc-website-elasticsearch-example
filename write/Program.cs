@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using Amazon;
 using Amazon.S3;
@@ -31,7 +32,9 @@ namespace write
                 new ExtendedClientConfiguration().WithLargePayloadSupportEnabled(s3, Env.Var.SqsPayloadBucket)
             );
 
-            var message = new
+            // index a simple document
+            
+            var simpleMessage = new
             {
                 verb = "upsert",
                 index = "test",
@@ -39,32 +42,56 @@ namespace write
                 {
                     id = "123456789", // ID managed by Umbraco
                     site = "website", // as opposed to datahub|sac|mhc
-                    title = "An example search document",
-                    content = "This is a search document made purely for example purposes.",
-                    content_base64 = "", // base-64 encoded content when this is a PDF, etc.
+                    title = "An example searchable document",
+                    content = "This is a searchable document made purely for example purposes.",
                     url = "http://example.com/pages/123456789", // the URL of the page, for clicking through
                     keywords = new []
                     {
                         new { vocab = "http://vocab.jncc.gov.uk/jncc-web", value = "Example" }
                     },
-                    published_date = "2019-01-10",
+                    published_date = "2019-01-14",
+                }
+            };
+
+            var basicResponse = await sqsExtendedClient.SendMessageAsync(Env.Var.SqsEndpoint,
+                JsonConvert.SerializeObject(simpleMessage, Formatting.None)
+            );
+
+            Console.WriteLine(basicResponse.MessageId);
+
+            // index a PDF
+            
+            var pdf = File.ReadAllBytes(@"./OffshoreBrighton_SACO_V1.0.pdf");
+            var pdfEncoded = Convert.ToBase64String(pdf);
+
+            var pdfMessage = new
+            {
+                verb = "upsert",
+                index = "test",
+                document = new
+                {
+                    id = "987654321",
+                    site = "website", 
+                    title = "An example PDF document",
+                    content = "This is a PDF document searchable purely for example purposes.",
+                    url = "http://example.com/pages/987654321",
+                    keywords = new []
+                    {
+                        new { vocab = "http://vocab.jncc.gov.uk/jncc-web", value = "Example" }
+                    },
+                    published_date = "2019-01-14",
+                    content_base64 = pdfEncoded, // base-64 encoded content when this is a PDF, etc.
                     mime_type = "application/pdf", // only needed when e.g. a PDF
                 }
             };
 
-            string messageString = JsonConvert.SerializeObject(message, Formatting.None);
+            var pdfResponse = await sqsExtendedClient.SendMessageAsync(Env.Var.SqsEndpoint,
+                JsonConvert.SerializeObject(pdfMessage, Formatting.None)
+            );
 
-            var result = await sqsExtendedClient.SendMessageAsync(Env.Var.SqsEndpoint, messageString);
-            Console.WriteLine(result.MessageId);
+            Console.WriteLine(pdfResponse.MessageId);
         }
-
-    static string Base64Encode(string plainText)
-    {
-      var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-      return System.Convert.ToBase64String(plainTextBytes);
     }
-
-  }
 
     /// <summary>
     /// Provides environment variables.
