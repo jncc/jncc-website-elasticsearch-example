@@ -23,9 +23,13 @@ namespace write
 
         static async Task Example()
         {
-            var s3Client = new AmazonS3Client(new BasicAWSCredentials(Env.Var.AwsAccessKey, Env.Var.AwsSecretAccessKey), RegionEndpoint.GetBySystemName(Env.Var.AwsRegion));
-            var sqsClient = new AmazonSQSClient(new BasicAWSCredentials(Env.Var.AwsAccessKey, Env.Var.AwsSecretAccessKey), RegionEndpoint.GetBySystemName(Env.Var.AwsRegion));
-            var sqsExtendedClient = new AmazonSQSExtendedClient(sqsClient, new ExtendedClientConfiguration().WithLargePayloadSupportEnabled(s3Client, Env.Var.SqsPayloadBucket));
+            var credentials = new BasicAWSCredentials(Env.Var.AwsAccessKey, Env.Var.AwsSecretAccessKey);
+            var region = RegionEndpoint.GetBySystemName(Env.Var.AwsRegion);
+            var s3 = new AmazonS3Client(credentials, region);
+            var sqs = new AmazonSQSClient(credentials, region);
+            var sqsExtendedClient = new AmazonSQSExtendedClient(sqs,
+                new ExtendedClientConfiguration().WithLargePayloadSupportEnabled(s3, Env.Var.SqsPayloadBucket)
+            );
 
             var message = new
             {
@@ -33,28 +37,34 @@ namespace write
                 index = "test",
                 document = new
                 {
-                    id = "6f7fc96a-1120-41c8-a7fd-e320f92535cb",
-                    site = "website",
-                    title = "An example search entry",
-                    content = "This is a search entry made pure for example purposes.",
+                    id = "123456789", // ID managed by Umbraco
+                    site = "website", // as opposed to datahub|sac|mhc
+                    title = "An example search document",
+                    content = "This is a search document made purely for example purposes.",
+                    content_base64 = "", // base-64 encoded content when this is a PDF, etc.
+                    url = "http://example.com/pages/123456789", // the URL of the page, for clicking through
                     keywords = new []
                     {
-                        new { vocab = "http://vocab.jncc.gov.uk/jncc-web", value = "None" }
+                        new { vocab = "http://vocab.jncc.gov.uk/jncc-web", value = "Example" }
                     },
                     published_date = "2019-01-10",
-                    // mime_type = "",
-                    // data_type = "",
-                    // data = "",
+                    mime_type = "application/pdf", // only needed when e.g. a PDF
                 }
             };
 
-            string messageString = JsonConvert.SerializeObject(message, Formatting.None, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            Console.WriteLine(messageString);
+            string messageString = JsonConvert.SerializeObject(message, Formatting.None);
 
             var result = await sqsExtendedClient.SendMessageAsync(Env.Var.SqsEndpoint, messageString);
             Console.WriteLine(result.MessageId);
         }
+
+    static string Base64Encode(string plainText)
+    {
+      var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+      return System.Convert.ToBase64String(plainTextBytes);
     }
+
+  }
 
     /// <summary>
     /// Provides environment variables.
