@@ -23,9 +23,9 @@ namespace jncc_es_sample
             int start = 0;
             int size = 10;
             string site = "datahub";
-            string query = "habitats";
+            string q = "habitats";
 
-            var q = new {
+            var doc = new {
                 _source = new { excludes =  new [] { "content" } },
                 from = start,
                 size = size,
@@ -38,7 +38,7 @@ namespace jncc_es_sample
                             new {
                                 common = new {
                                     content = new {
-                                        query = query,
+                                        query = q,
                                         cutoff_frequency = 0.001,
                                         low_freq_operator = "or"
                                     }
@@ -49,7 +49,7 @@ namespace jncc_es_sample
                             new {
                                 common = new {
                                     title = new {
-                                        query = query,
+                                        query = q,
                                         cutoff_frequency = 0.001,
                                         low_freq_operator = "or"
                                     }
@@ -68,7 +68,7 @@ namespace jncc_es_sample
                 Method = HttpMethod.Post,
                 RequestUri = new Uri(Env.Var.ESEndpoint + "test/_search"),
                 Content = new StringContent(
-                    JsonConvert.SerializeObject(q, Formatting.None),
+                    JsonConvert.SerializeObject(doc, Formatting.None),
                     Encoding.UTF8,
                     "application/json"
                 )
