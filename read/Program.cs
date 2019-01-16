@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Aws4RequestSigner;
 using dotenv.net;
+using Newtonsoft.Json;
 
 namespace jncc_es_sample
 {
@@ -24,33 +25,53 @@ namespace jncc_es_sample
             string site = "datahub";
             string query = "habitats";
 
-            string q = String.Format(@"{{
-                ""_source"": {{ ""excludes"": [ ""content"" ] }},
-                ""from"": {0},
-                ""size"": {1},
-                ""query"": {{
-                    ""bool"": {{
-                        ""filter"": [
-                            {{ ""match"": {{ ""site"": ""{2}"" }} }}
-                        ],
-                        ""must"": [
-                            {{ ""common"": {{ ""content"": {{ ""query"": ""{3}"", ""cutoff_frequency"": 0.001, ""low_freq_operator"": ""or"" }} }} }}
-                        ],
-                        ""should"": [
-                            {{ ""common"": {{ ""title"": {{ ""query"": ""{3}"", ""cutoff_frequency"": 0.001, ""low_freq_operator"": ""or"" }} }} }}
-                        ]
-                    }}
-                }},
-                ""highlight"": {{
-                    ""fields"": {{ ""content"": {{}} }}
-                }}
-            }}", start, size, site, query).Trim();
+            var q = new {
+                _source = new { excludes =  new [] { "content" } },
+                from = start,
+                size = size,
+                query =  new {
+                    @bool = new {
+                        filter = new [] {
+                            new { match = new { site = site } }
+                        },
+                        must = new [] {
+                            new {
+                                common = new {
+                                    content = new {
+                                        query = query,
+                                        cutoff_frequency = 0.001,
+                                        low_freq_operator = "or"
+                                    }
+                                }
+                            }
+                        },
+                        should = new [] {
+                            new {
+                                common = new {
+                                    title = new {
+                                        query = query,
+                                        cutoff_frequency = 0.001,
+                                        low_freq_operator = "or"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                highlight = new {
+                    fields = new { content = new {} }
+                }
+            };
 
             var request = new HttpRequestMessage
             {
-                Method = HttpMethod.Get,
+                Method = HttpMethod.Post,
                 RequestUri = new Uri(Env.Var.ESEndpoint + "test/_search"),
-                Content = new StringContent(q, Encoding.UTF8, "application/json")
+                Content = new StringContent(
+                    JsonConvert.SerializeObject(q, Formatting.None),
+                    Encoding.UTF8,
+                    "application/json"
+                )
             };
 
             var signedRequest = await GetSignedRequest(request);
