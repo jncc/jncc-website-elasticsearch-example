@@ -74,14 +74,15 @@ namespace write
                     site = "website", 
                     title = "An example PDF document",
                     content = "This is a PDF document searchable purely for example purposes.",
-                    url = "http://example.com/pages/987654321",
+                    url = "http://example.com/downloads/987654321.pdf",
                     keywords = new []
                     {
                         new { vocab = "http://vocab.jncc.gov.uk/jncc-web", value = "Example" }
                     },
                     published_date = "2019-01-14",
-                    content_base64 = pdfEncoded, // base-64 encoded content when this is a PDF, etc.
-                    mime_type = "application/pdf", // only needed when e.g. a PDF
+                    file_base64 = pdfEncoded, // base-64 encoded file
+                    file_extension = "pdf",   // when this is a downloadable
+                    file_bytes = "1048576",   // file such as a PDF, etc.
                 }
             };
 
