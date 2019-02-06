@@ -73,7 +73,7 @@ namespace write
                     id = "987654321",
                     site = "website", 
                     title = "An example PDF document",
-                    content = "This is a PDF document searchable purely for example purposes.",
+//                  content = "The content field will be set with the contents of the parsed file",
                     url = "http://example.com/downloads/987654321.pdf",
                     keywords = new []
                     {
