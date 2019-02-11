@@ -9,21 +9,17 @@ using Amazon.Runtime;
 using Amazon.SQS.ExtendedClient;
 using Newtonsoft.Json;
 using dotenv.net;
+using System.Linq;
 
 namespace write
 {
     class Program
     {
-        static void Main()
+        static void Main(string[] args)
         {
             DotEnv.Config();
             Console.WriteLine("Hello World!");
 
-            Example().GetAwaiter().GetResult();            
-        }
-
-        static async Task Example()
-        {
             var credentials = new BasicAWSCredentials(Env.Var.AwsAccessKey, Env.Var.AwsSecretAccessKey);
             var region = RegionEndpoint.GetBySystemName(Env.Var.AwsRegion);
             var s3 = new AmazonS3Client(credentials, region);
@@ -32,6 +28,29 @@ namespace write
                 new ExtendedClientConfiguration().WithLargePayloadSupportEnabled(s3, Env.Var.SqsPayloadBucket)
             );
 
+            string command = args.FirstOrDefault();
+
+            if (command == "upsert-simple")
+            {
+                UpsertSimpleExample(sqsExtendedClient).GetAwaiter().GetResult();            
+
+            }
+            else if (command == "delete-simple")
+            {
+                DeleteExample(sqsExtendedClient).GetAwaiter().GetResult();            
+            }
+            else if (command == "upsert-pdf")
+            {
+                UpsertPdfExample(sqsExtendedClient).GetAwaiter().GetResult();            
+            }
+            else
+            {
+                throw new Exception("Please specify command (see code / readme).");
+            }
+        }
+
+        static async Task UpsertSimpleExample(AmazonSQSExtendedClient client)
+        {
             // index a simple document
             
             var simpleMessage = new
@@ -53,12 +72,36 @@ namespace write
                 }
             };
 
-            var basicResponse = await sqsExtendedClient.SendMessageAsync(Env.Var.SqsEndpoint,
+            var basicResponse = await client.SendMessageAsync(Env.Var.SqsEndpoint,
                 JsonConvert.SerializeObject(simpleMessage, Formatting.None)
             );
 
             Console.WriteLine(basicResponse.MessageId);
 
+        }
+
+        static async Task DeleteExample(AmazonSQSExtendedClient client)
+        {
+            var deleteMessage = new
+            {
+                verb = "delete",
+                index = "test",
+                document = new
+                {
+                    id = "123456789",
+                    site = "website",
+                }
+            };
+
+            var deleteResponse = await client.SendMessageAsync(Env.Var.SqsEndpoint,
+                JsonConvert.SerializeObject(deleteMessage, Formatting.None)
+            );
+
+            Console.WriteLine(deleteResponse.MessageId);
+        }
+
+        static async Task UpsertPdfExample(AmazonSQSExtendedClient client)
+        {
             // index a PDF
             
             var pdf = File.ReadAllBytes(@"./OffshoreBrighton_SACO_V1.0.pdf");
@@ -86,7 +129,7 @@ namespace write
                 }
             };
 
-            var pdfResponse = await sqsExtendedClient.SendMessageAsync(Env.Var.SqsEndpoint,
+            var pdfResponse = await client.SendMessageAsync(Env.Var.SqsEndpoint,
                 JsonConvert.SerializeObject(pdfMessage, Formatting.None)
             );
 
