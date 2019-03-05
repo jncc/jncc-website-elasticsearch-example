@@ -69,7 +69,17 @@ namespace write
                         new { vocab = "http://vocab.jncc.gov.uk/jncc-web", value = "Example" }
                     },
                     published_date = "2019-01-14",
+                },
+                resources = new [] {
+                    new {
+                    title = "An example searchable document",
+//                  content = "The content field will be set with the contents of the parsed file",
+                    url = "http://example.com/pages/123456789", // the URL of the page, for clicking through
+                    file_base64 = pdfEncoded, // base-64 encoded file
+                    file_extension = "pdf",   // when this is a downloadable
+                    file_bytes = "1048576",   // file such as a PDF, etc.
                 }
+
             };
 
             var basicResponse = await client.SendMessageAsync(Env.Var.SqsEndpoint,
